@@ -1,0 +1,12 @@
+@CurrencyService_HostAddress = http://localhost:5022
+
+### Test USD
+GET http://localhost:5022/exchange/usd
+
+### Test EUR
+GET http://localhost:5022/exchange/eur
+
+### Test a fake currency to make sure our error handling works
+GET http://localhost:5022/exchange/xyz
+
+###
