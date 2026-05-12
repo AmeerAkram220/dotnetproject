@@ -1,0 +1,40 @@
+﻿<Window x:Class="ExchangeOfficeClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        Title="Currency Exchange Office by Amir Morkos" Height="600" Width="950"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="50"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top navigation bar -->
+        <Border Grid.Row="0" Background="#1E3A5F">
+            <DockPanel Margin="10,0">
+                <TextBlock Text="Currency Exchange Office by Amir Morkos"
+                           Foreground="White" FontSize="18" FontWeight="Bold"
+                           VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <Button Content="Exchange Rates" Click="NavRates_Click"
+                            Style="{StaticResource NavButton}"/>
+                    <Button Content="My Account" Click="NavAccount_Click"
+                            Style="{StaticResource NavButton}"/>
+                    <Button Content="Trade" Click="NavTrade_Click"
+                            Style="{StaticResource NavButton}"/>
+                    <Button Content="History" Click="NavHistory_Click"
+                            Style="{StaticResource NavButton}"/>
+                    <Button x:Name="BtnLogout" Content="Logout" Click="NavLogout_Click"
+                            Style="{StaticResource NavButton}" Visibility="Collapsed"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Content area -->
+        <Frame x:Name="MainFrame" Grid.Row="1" NavigationUIVisibility="Hidden"/>
+    </Grid>
+</Window>

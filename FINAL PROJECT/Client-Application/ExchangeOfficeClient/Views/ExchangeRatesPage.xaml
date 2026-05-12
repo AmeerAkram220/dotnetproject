@@ -1,0 +1,39 @@
+<Page x:Class="ExchangeOfficeClient.Views.ExchangeRatesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Exchange Rates">
+    <Grid Background="#F5F7FA" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Exchange Rates" Style="{StaticResource PageTitle}"/>
+
+        <!-- Search bar -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+            <TextBox x:Name="TxtSearch" Width="200" Height="34" Padding="8,6"
+                     BorderBrush="#CCCCCC" VerticalContentAlignment="Center"
+                     Text="" TextChanged="TxtSearch_TextChanged"/>
+            <Button Content="Load All Rates" Click="BtnLoadAll_Click"
+                    Style="{StaticResource PrimaryButton}" Margin="10,0,0,0" Height="34"/>
+            <TextBlock x:Name="TxtStatus" VerticalAlignment="Center"
+                       Margin="16,0,0,0" Foreground="Gray"/>
+        </StackPanel>
+
+        <!-- Rates table -->
+        <DataGrid Grid.Row="2" x:Name="RatesGrid"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  CanUserAddRows="False" GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column" AlternatingRowBackground="#F0F4F8"
+                  BorderBrush="#CCCCCC" BorderThickness="1">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="80"/>
+                <DataGridTextColumn Header="Currency" Binding="{Binding Currency}" Width="*"/>
+                <DataGridTextColumn Header="Mid Rate (PLN)" Binding="{Binding Mid, StringFormat=F4}" Width="130"/>
+                <DataGridTextColumn Header="Effective Date" Binding="{Binding EffectiveDate, StringFormat=yyyy-MM-dd}" Width="130"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Page>

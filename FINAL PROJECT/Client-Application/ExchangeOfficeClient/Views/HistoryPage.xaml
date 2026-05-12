@@ -1,0 +1,29 @@
+<Page x:Class="ExchangeOfficeClient.Views.HistoryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="Transaction History">
+    <Grid Background="#F5F7FA" Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Transaction History" Style="{StaticResource PageTitle}"/>
+
+        <DataGrid Grid.Row="1" x:Name="HistoryGrid"
+                  AutoGenerateColumns="False" IsReadOnly="True"
+                  CanUserAddRows="False" GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column" AlternatingRowBackground="#F0F4F8"
+                  BorderBrush="#CCCCCC" BorderThickness="1">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="#" Binding="{Binding Id}" Width="50"/>
+                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat=yyyy-MM-dd HH:mm}" Width="140"/>
+                <DataGridTextColumn Header="From" Binding="{Binding FromCurrency}" Width="70"/>
+                <DataGridTextColumn Header="Amount" Binding="{Binding FromAmount, StringFormat=F2}" Width="100"/>
+                <DataGridTextColumn Header="To" Binding="{Binding ToCurrency}" Width="70"/>
+                <DataGridTextColumn Header="Received" Binding="{Binding ToAmount, StringFormat=F4}" Width="100"/>
+                <DataGridTextColumn Header="Rate" Binding="{Binding Rate, StringFormat=F4}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Page>
