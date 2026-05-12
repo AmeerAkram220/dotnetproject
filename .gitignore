@@ -213,6 +213,9 @@ PublishScripts/
 # NuGet v3's project.json files produces more ignorable files
 *.nuget.props
 *.nuget.targets
+# NuGet local cache directories
+.nuget/
+nuget/
 
 # Microsoft Azure Build Output
 csx/
@@ -309,9 +312,7 @@ node_modules/
 *.dsw
 *.dsp
 
-# Visual Studio 6 technical files
-*.ncb
-*.aps
+# Visual Studio 6 technical files (*.ncb and *.aps already listed above)
 
 # Visual Studio LightSwitch build output
 **/*.HTMLClient/GeneratedArtifacts
@@ -480,3 +481,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# dotnet SDK local files
+.dotnet/

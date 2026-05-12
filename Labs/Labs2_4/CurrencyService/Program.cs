@@ -1,46 +1,19 @@
-using System.Net.Http.Json;
+using CoreWCF;
+using CoreWCF.Channels;
+using CoreWCF.Configuration;
+using CurrencyService;
 
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddHttpClient();
+builder.Services.AddServiceModelServices();
+builder.Services.AddTransient<ExchangeService>();
 
 var app = builder.Build();
 
-app.MapGet("/", () => "The Currency Exchange API is running! Try going to /exchange/usd");
-app.MapGet("/exchange/{code}", async (string code, HttpClient client) =>
+app.UseServiceModel(sb =>
 {
-    string nbpUrl = $"http://api.nbp.pl/api/exchangerates/rates/a/{code}/?format=json";
-
-    try
-    {
-        var nbpData = await client.GetFromJsonAsync<NbpResponse>(nbpUrl);
-        if (nbpData != null && nbpData.Rates.Length > 0)
-        {
-            return Results.Ok(new 
-            {
-                CurrencyName = nbpData.Currency,
-                CurrencyCode = nbpData.Code,
-                ExchangeRate = nbpData.Rates[0].Mid
-            });
-        }
-        
-        return Results.NotFound("Data not found for this currency.");
-    }
-    catch (HttpRequestException)
-    {
-        return Results.BadRequest("Invalid currency code or the NBP API is down.");
-    }
+    sb.AddService<ExchangeService>();
+    sb.AddServiceEndpoint<ExchangeService, ICurrencyService>(
+        new BasicHttpBinding(BasicHttpSecurityMode.None), "/CurrencyService.svc");
 });
 
 app.Run();
-class NbpResponse
-{
-    public string Currency { get; set; }
-    public string Code { get; set; }
-    public NbpRate[] Rates { get; set; }
-}
-
-class NbpRate
-{
-    public decimal Mid { get; set; } 
-}
