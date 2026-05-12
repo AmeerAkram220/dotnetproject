@@ -76,6 +76,9 @@ public interface IExchangeRateService
 
     [OperationContract]
     List<ExchangeRateDto> GetHistoricalRates(string currencyCode, DateTime from, DateTime to);
+
+    [OperationContract]
+    List<ExchangeRateDto> GetAllCurrentRates();
 }
 
 [ServiceContract]

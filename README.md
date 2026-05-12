@@ -86,8 +86,8 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 1 — WCF Hello World Service + Console Client
 - [x] Labs 2–4 — Currency Exchange Rate WCF Service (NBP API)
 - [x] Lab 5 — Final project architecture: 3 WCF service contracts defined (Account, ExchangeRate, Transaction)
-- [-] Lab 6 — Currency exchange business logic (in progress)
-- [ ] Lab 7 — NBP API integration (current & historical rates)
+- [x] Lab 6 — Currency exchange business logic (in-memory): register/login, top-up, buy/sell currency, transaction history
+- [x] Lab 7 — NBP API integration: dedicated `NbpClient`, `GetCurrentRate`, `GetHistoricalRates`, `GetAllCurrentRates`
 - [ ] Lab 8 — WPF client application skeleton
 - [ ] Lab 9 — User account management
 - [ ] Lab 10 — Buy/sell currency transactions in WPF
