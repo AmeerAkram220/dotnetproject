@@ -6,26 +6,29 @@
 
 ## Description
 
-A network-based system simulating an online currency exchange office, built using Windows Communication Foundation (WCF) and .NET. The system exposes WCF services for retrieving real exchange rates from the National Bank of Poland (NBP) public API and will grow into a full exchange office platform with user accounts, transactions, and a WPF client.
+A network-based system simulating an online currency exchange office, built using Windows Communication Foundation (WCF) and .NET. The system exposes WCF services for retrieving real exchange rates from the National Bank of Poland (NBP) public API, and is being extended into a full exchange office platform with user accounts, currency transactions, and a WPF client application backed by a database.
 
 ## Project Structure
 
 ```
 dotnetproject/
-├── Labs/
-│   ├── Lab_1/
-│   │   ├── Lab1Service/        WCF service exposing a simple greeting operation
-│   │   └── Lab1Client/         Console client that consumes Lab1Service via WCF
-│   └── Labs2_4/
-│       └── CurrencyService/    WCF service returning live exchange rates from NBP API
-└── README.md
+└── FINAL PROJECT/
+    ├── CurrencyExchangeOffice.sln
+    ├── WCF-Service/
+    │   ├── Lab1Service/              Lab 1 WCF service (GetMessage)
+    │   ├── Lab1Client/               Lab 1 console client
+    │   ├── CurrencyService/          Labs 2–4 currency rate WCF service (NBP API)
+    │   └── ExchangeOfficeService/    Final project WCF service (3 endpoints)
+    ├── Client-Application/           WPF client (in progress)
+    ├── Database/                     SQL schema & scripts (in progress)
+    └── Documentation/
 ```
 
 ## How to Run
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ---
 
@@ -34,38 +37,47 @@ dotnetproject/
 **1. Start the service**
 
 ```bash
-cd Labs/Lab_1/Lab1Service
+cd "FINAL PROJECT/WCF-Service/Lab1Service"
 dotnet run
 ```
 
-The WCF endpoint is available at: `http://localhost:5124/SimpleService.svc`
+WCF endpoint: `http://localhost:5000/SimpleService.svc`
 
-**2. Run the client** (in a separate terminal)
+**2. Run the client** (separate terminal)
 
 ```bash
-cd Labs/Lab_1/Lab1Client
+cd "FINAL PROJECT/WCF-Service/Lab1Client"
 dotnet run
 ```
-
-The client connects to the service and prints the response.
 
 ---
 
 ### Labs 2–4 — Currency Exchange Rate Service
 
-**Start the service**
-
 ```bash
-cd Labs/Labs2_4/CurrencyService
+cd "FINAL PROJECT/WCF-Service/CurrencyService"
 dotnet run
 ```
 
-The WCF endpoint is available at: `http://localhost:5022/CurrencyService.svc`
+WCF endpoint: `http://localhost:5000/CurrencyService.svc`
 
-To test, consume the service via a WCF client or inspect the WSDL at:
-`http://localhost:5022/CurrencyService.svc?wsdl`
+`GetExchangeRate(currencyCode)` — accepts a currency code (e.g. `USD`, `EUR`, `GBP`) and returns the current mid-rate from the NBP API.
 
-The `GetExchangeRate` operation accepts a currency code (e.g. `USD`, `EUR`, `GBP`) and returns the current mid-rate from the NBP API.
+---
+
+### Labs 5+ — Final Project (Exchange Office Service)
+
+```bash
+cd "FINAL PROJECT/WCF-Service/ExchangeOfficeService"
+dotnet run
+```
+
+Exposes three WCF endpoints:
+- `/AccountService.svc` — user registration, login, balance top-up
+- `/ExchangeRateService.svc` — current & historical exchange rates
+- `/TransactionService.svc` — buy/sell currency, transaction history
+
+Test via Postman (SOAP) or SoapUI.
 
 ---
 
@@ -73,4 +85,13 @@ The `GetExchangeRate` operation accepts a currency code (e.g. `USD`, `EUR`, `GBP
 
 - [x] Lab 1 — WCF Hello World Service + Console Client
 - [x] Labs 2–4 — Currency Exchange Rate WCF Service (NBP API)
-- [ ] Labs 5–14 — Full Currency Exchange Office System (WCF + WPF + Database)
+- [x] Lab 5 — Final project architecture: 3 WCF service contracts defined (Account, ExchangeRate, Transaction)
+- [-] Lab 6 — Currency exchange business logic (in progress)
+- [ ] Lab 7 — NBP API integration (current & historical rates)
+- [ ] Lab 8 — WPF client application skeleton
+- [ ] Lab 9 — User account management
+- [ ] Lab 10 — Buy/sell currency transactions in WPF
+- [ ] Lab 11 — SQL database schema & scripts
+- [ ] Lab 12 — Persist transactions & balances in DB
+- [ ] Lab 13 — Historical rates view & reporting
+- [ ] Lab 14 — Testing, debugging, final fixes

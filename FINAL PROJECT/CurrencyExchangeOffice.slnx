@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/WCF-Service/">
+    <Project Path="WCF-Service/CurrencyService/CurrencyService.csproj" />
+    <Project Path="WCF-Service/ExchangeOfficeService/ExchangeOfficeService.csproj" />
+    <Project Path="WCF-Service/Lab1Client/Lab1Client.csproj" />
+    <Project Path="WCF-Service/Lab1Service/Lab1Service.csproj" />
+  </Folder>
+</Solution>
