@@ -11,7 +11,11 @@ public partial class ExchangeRatesPage : Page
     public ExchangeRatesPage()
     {
         InitializeComponent();
+        DpTo.SelectedDate = DateTime.Today;
+        DpFrom.SelectedDate = DateTime.Today.AddDays(-30);
     }
+
+    // ── Current rates ────────────────────────────────────────────────────────
 
     private void LoadAllRates()
     {
@@ -36,6 +40,72 @@ public partial class ExchangeRatesPage : Page
         var filter = TxtSearch.Text.Trim().ToUpper();
         RatesGrid.ItemsSource = string.IsNullOrEmpty(filter)
             ? _allRates
-            : _allRates.Where(r => r.Code.Contains(filter) || r.Currency.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+            : _allRates.Where(r => r.Code.Contains(filter) ||
+                r.Currency.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+
+    private void BtnLoadHistory_Click(object sender, RoutedEventArgs e)
+    {
+        HistSummary.Visibility = Visibility.Collapsed;
+        HistGrid.ItemsSource = null;
+        TxtHistStatus.Foreground = System.Windows.Media.Brushes.Gray;
+
+        var code = TxtHistCode.Text.Trim().ToUpper();
+        if (string.IsNullOrEmpty(code))
+        {
+            TxtHistStatus.Text = "Enter a currency code.";
+            return;
+        }
+
+        if (DpFrom.SelectedDate is null || DpTo.SelectedDate is null)
+        {
+            TxtHistStatus.Text = "Select both dates.";
+            return;
+        }
+
+        var from = DpFrom.SelectedDate.Value;
+        var to = DpTo.SelectedDate.Value;
+
+        if (from > to)
+        {
+            TxtHistStatus.Text = "'From' must be before 'To'.";
+            return;
+        }
+
+        if ((to - from).TotalDays > 93)
+        {
+            TxtHistStatus.Text = "Max range is 93 days (NBP limit).";
+            TxtHistStatus.Foreground = System.Windows.Media.Brushes.OrangeRed;
+            return;
+        }
+
+        TxtHistStatus.Text = "Loading...";
+        try
+        {
+            var rates = ServiceClientFactory.ExchangeRateService()
+                .GetHistoricalRates(code, from, to);
+
+            if (rates.Count == 0)
+            {
+                TxtHistStatus.Text = $"No data for '{code}' in this range.";
+                return;
+            }
+
+            HistGrid.ItemsSource = rates;
+            TxtHistStatus.Text = $"{rates.Count} entries.";
+
+            // Summary statistics
+            var mids = rates.Select(r => r.Mid).ToList();
+            TxtHistMin.Text = $"{mids.Min():F4}";
+            TxtHistMax.Text = $"{mids.Max():F4}";
+            TxtHistAvg.Text = $"{mids.Average():F4}";
+            HistSummary.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            TxtHistStatus.Text = $"Error: {ex.Message}";
+            TxtHistStatus.Foreground = System.Windows.Media.Brushes.Red;
+        }
     }
 }

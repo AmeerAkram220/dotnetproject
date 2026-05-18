@@ -93,5 +93,5 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 10 — Trade page polish: PLN balance bar with refresh, live rate preview while typing (cost/gain shown before confirming), balance auto-refresh after each trade
 - [x] Lab 11 — SQLite database: schema script (`Database/schema.sql`), `AppDb.cs` initialiser (auto-creates tables on first run), `Microsoft.Data.Sqlite` package added
 - [x] Lab 12 — Full DB persistence: `AccountService`, `TransactionService` rewritten with SQLite queries; register/login/balances/transactions all stored on disk; buy/sell wrapped in transactions with rollback on error
-- [ ] Lab 13 — Historical rates view & reporting
+- [x] Lab 13 — Historical rates
 - [ ] Lab 14 — Testing, debugging, final fixes
