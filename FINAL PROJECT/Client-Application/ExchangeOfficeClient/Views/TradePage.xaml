@@ -2,63 +2,88 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Title="Trade">
-    <Grid Background="#F5F7FA" Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer Background="#F5F7FA" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="24">
 
-        <TextBlock Grid.Row="0" Text="Buy / Sell Currency" Style="{StaticResource PageTitle}"/>
+            <TextBlock Text="Buy / Sell Currency" Style="{StaticResource PageTitle}"/>
 
-        <!-- Buy -->
-        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="20"
-                Margin="0,0,0,16" BorderBrush="#E0E0E0" BorderThickness="1">
-            <StackPanel>
-                <TextBlock Text="Buy Currency (spend PLN)" FontSize="15" FontWeight="SemiBold"
-                           Foreground="#1E3A5F" Margin="0,0,0,12"/>
+            <!-- PLN Balance bar -->
+            <Border Background="#1E3A5F" CornerRadius="8" Padding="16,12"
+                    Margin="0,0,0,16">
                 <StackPanel Orientation="Horizontal">
-                    <StackPanel>
-                        <TextBlock Text="Currency (e.g. USD)" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtBuyCurrency" Width="120" Height="34" Padding="8,6"
-                                 BorderBrush="#CCCCCC" VerticalContentAlignment="Center"/>
-                    </StackPanel>
-                    <StackPanel Margin="10,0,0,0">
-                        <TextBlock Text="Amount" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtBuyAmount" Width="130" Height="34" Padding="8,6"
-                                 BorderBrush="#CCCCCC" VerticalContentAlignment="Center"/>
-                    </StackPanel>
-                    <Button Content="Buy" Click="BtnBuy_Click"
-                            Style="{StaticResource PrimaryButton}" Height="34" Margin="10,18,0,0"/>
+                    <TextBlock Text="PLN Balance: " Foreground="White" FontSize="14"/>
+                    <TextBlock x:Name="TxtPlnBalance" Text="—" Foreground="White"
+                               FontSize="14" FontWeight="Bold"/>
+                    <Button Content="↻" Click="BtnRefreshBalance_Click"
+                            Background="Transparent" BorderThickness="0"
+                            Foreground="White" Cursor="Hand" Margin="12,0,0,0" FontSize="14"/>
                 </StackPanel>
-                <TextBlock x:Name="TxtBuyMsg" Margin="0,8,0,0"
-                           Visibility="Collapsed" TextWrapping="Wrap"/>
-            </StackPanel>
-        </Border>
+            </Border>
 
-        <!-- Sell -->
-        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="20"
-                BorderBrush="#E0E0E0" BorderThickness="1">
-            <StackPanel>
-                <TextBlock Text="Sell Currency (receive PLN)" FontSize="15" FontWeight="SemiBold"
-                           Foreground="#1E3A5F" Margin="0,0,0,12"/>
-                <StackPanel Orientation="Horizontal">
-                    <StackPanel>
-                        <TextBlock Text="Currency (e.g. USD)" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtSellCurrency" Width="120" Height="34" Padding="8,6"
-                                 BorderBrush="#CCCCCC" VerticalContentAlignment="Center"/>
+            <!-- Buy -->
+            <Border Background="White" CornerRadius="8" Padding="20"
+                    Margin="0,0,0,16" BorderBrush="#E0E0E0" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Buy Currency (spend PLN)" FontSize="15" FontWeight="SemiBold"
+                               Foreground="#1E3A5F" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Currency (e.g. USD)" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtBuyCurrency" Width="120" Height="34" Padding="8,6"
+                                     BorderBrush="#CCCCCC" VerticalContentAlignment="Center"
+                                     TextChanged="TxtBuyCurrency_TextChanged"/>
+                        </StackPanel>
+                        <StackPanel Margin="10,0,0,0">
+                            <TextBlock Text="Amount to buy" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtBuyAmount" Width="130" Height="34" Padding="8,6"
+                                     BorderBrush="#CCCCCC" VerticalContentAlignment="Center"
+                                     TextChanged="TxtBuyAmount_TextChanged"/>
+                        </StackPanel>
+                        <Button Content="Buy" Click="BtnBuy_Click"
+                                Style="{StaticResource PrimaryButton}" Height="34" Margin="10,18,0,0"/>
                     </StackPanel>
-                    <StackPanel Margin="10,0,0,0">
-                        <TextBlock Text="Amount" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
-                        <TextBox x:Name="TxtSellAmount" Width="130" Height="34" Padding="8,6"
-                                 BorderBrush="#CCCCCC" VerticalContentAlignment="Center"/>
-                    </StackPanel>
-                    <Button Content="Sell" Click="BtnSell_Click"
-                            Style="{StaticResource PrimaryButton}" Height="34" Margin="10,18,0,0"/>
+                    <!-- Rate preview -->
+                    <Border x:Name="BuyPreview" Background="#F0F4F8" CornerRadius="4" Padding="10,8"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="TxtBuyPreview" Foreground="#1E3A5F" FontSize="13"/>
+                    </Border>
+                    <TextBlock x:Name="TxtBuyMsg" Margin="0,8,0,0"
+                               Visibility="Collapsed" TextWrapping="Wrap"/>
                 </StackPanel>
-                <TextBlock x:Name="TxtSellMsg" Margin="0,8,0,0"
-                           Visibility="Collapsed" TextWrapping="Wrap"/>
-            </StackPanel>
-        </Border>
-    </Grid>
+            </Border>
+
+            <!-- Sell -->
+            <Border Background="White" CornerRadius="8" Padding="20"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Sell Currency (receive PLN)" FontSize="15" FontWeight="SemiBold"
+                               Foreground="#1E3A5F" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <StackPanel>
+                            <TextBlock Text="Currency (e.g. USD)" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtSellCurrency" Width="120" Height="34" Padding="8,6"
+                                     BorderBrush="#CCCCCC" VerticalContentAlignment="Center"
+                                     TextChanged="TxtSellCurrency_TextChanged"/>
+                        </StackPanel>
+                        <StackPanel Margin="10,0,0,0">
+                            <TextBlock Text="Amount to sell" FontSize="11" Foreground="Gray" Margin="0,0,0,2"/>
+                            <TextBox x:Name="TxtSellAmount" Width="130" Height="34" Padding="8,6"
+                                     BorderBrush="#CCCCCC" VerticalContentAlignment="Center"
+                                     TextChanged="TxtSellAmount_TextChanged"/>
+                        </StackPanel>
+                        <Button Content="Sell" Click="BtnSell_Click"
+                                Style="{StaticResource PrimaryButton}" Height="34" Margin="10,18,0,0"/>
+                    </StackPanel>
+                    <!-- Rate preview -->
+                    <Border x:Name="SellPreview" Background="#F0F4F8" CornerRadius="4" Padding="10,8"
+                            Visibility="Collapsed">
+                        <TextBlock x:Name="TxtSellPreview" Foreground="#1E3A5F" FontSize="13"/>
+                    </Border>
+                    <TextBlock x:Name="TxtSellMsg" Margin="0,8,0,0"
+                               Visibility="Collapsed" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
 </Page>

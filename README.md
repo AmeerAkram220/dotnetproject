@@ -90,8 +90,7 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 7 — NBP API integration: dedicated `NbpClient`, `GetCurrentRate`, `GetHistoricalRates`, `GetAllCurrentRates`
 - [x] Lab 8 — WPF client app: Login, Register, Exchange Rates, Account (top-up), Trade (buy/sell), History pages
 - [x] Lab 9 — User account management: confirm password on register, min length validation, change password, user info card, balance refresh
-- [ ] Lab 10 — Buy/sell currency transactions in WPF
-- [ ] Lab 10 — Buy/sell currency transactions in WPF
+- [x] Lab 10 — Trade page polish: PLN balance bar with refresh, live rate preview while typing (cost/gain shown before confirming), balance auto-refresh after each trade
 - [ ] Lab 11 — SQL database schema & scripts
 - [ ] Lab 12 — Persist transactions & balances in DB
 - [ ] Lab 13 — Historical rates view & reporting
