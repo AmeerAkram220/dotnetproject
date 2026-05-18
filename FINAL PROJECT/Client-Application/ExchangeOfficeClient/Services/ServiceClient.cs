@@ -59,6 +59,7 @@ public interface IAccountService
     [OperationContract] UserDto Login(string username, string password);
     [OperationContract] OperationResult TopUpBalance(int userId, decimal amount);
     [OperationContract] List<BalanceDto> GetBalances(int userId);
+    [OperationContract] OperationResult ChangePassword(int userId, string currentPassword, string newPassword);
 }
 
 [ServiceContract]

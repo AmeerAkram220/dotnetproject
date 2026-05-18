@@ -10,7 +10,8 @@ public partial class AccountPage : Page
     public AccountPage()
     {
         InitializeComponent();
-        TxtTitle.Text = $"My Account — {Session.Username}";
+        TxtUsername.Text = Session.Username;
+        TxtUserId.Text = $"User ID: {Session.UserId}";
         LoadBalances();
     }
 
@@ -28,6 +29,8 @@ public partial class AccountPage : Page
             TxtTopUpMsg.Visibility = Visibility.Visible;
         }
     }
+
+    private void BtnRefresh_Click(object sender, RoutedEventArgs e) => LoadBalances();
 
     private void BtnTopUp_Click(object sender, RoutedEventArgs e)
     {
@@ -66,6 +69,59 @@ public partial class AccountPage : Page
             TxtTopUpMsg.Text = $"Error: {ex.Message}";
             TxtTopUpMsg.Foreground = Brushes.Red;
             TxtTopUpMsg.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void BtnChangePwd_Click(object sender, RoutedEventArgs e)
+    {
+        TxtPwdMsg.Visibility = Visibility.Collapsed;
+        var current = TxtCurrentPwd.Password;
+        var newPwd = TxtNewPwd.Password;
+        var confirm = TxtConfirmPwd.Password;
+
+        if (string.IsNullOrWhiteSpace(current) || string.IsNullOrWhiteSpace(newPwd))
+        {
+            TxtPwdMsg.Text = "Please fill in all password fields.";
+            TxtPwdMsg.Foreground = Brushes.Red;
+            TxtPwdMsg.Visibility = Visibility.Visible;
+            return;
+        }
+        if (newPwd.Length < 6)
+        {
+            TxtPwdMsg.Text = "New password must be at least 6 characters.";
+            TxtPwdMsg.Foreground = Brushes.Red;
+            TxtPwdMsg.Visibility = Visibility.Visible;
+            return;
+        }
+        if (newPwd != confirm)
+        {
+            TxtPwdMsg.Text = "New passwords do not match.";
+            TxtPwdMsg.Foreground = Brushes.Red;
+            TxtPwdMsg.Visibility = Visibility.Visible;
+            return;
+        }
+
+        try
+        {
+            var svc = ServiceClientFactory.AccountService();
+            var result = svc.ChangePassword(Session.UserId, current, newPwd);
+
+            TxtPwdMsg.Text = result.Success ? "Password changed successfully." : result.Error;
+            TxtPwdMsg.Foreground = result.Success ? Brushes.Green : Brushes.Red;
+            TxtPwdMsg.Visibility = Visibility.Visible;
+
+            if (result.Success)
+            {
+                TxtCurrentPwd.Clear();
+                TxtNewPwd.Clear();
+                TxtConfirmPwd.Clear();
+            }
+        }
+        catch (Exception ex)
+        {
+            TxtPwdMsg.Text = $"Error: {ex.Message}";
+            TxtPwdMsg.Foreground = Brushes.Red;
+            TxtPwdMsg.Visibility = Visibility.Visible;
         }
     }
 }

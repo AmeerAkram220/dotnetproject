@@ -12,6 +12,12 @@ public class AccountService : IAccountService
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return new UserDto { Error = "Username and password are required." };
 
+        if (username.Trim().Length < 3)
+            return new UserDto { Error = "Username must be at least 3 characters." };
+
+        if (password.Length < 6)
+            return new UserDto { Error = "Password must be at least 6 characters." };
+
         if (DataStore.Users.Values.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
             return new UserDto { Error = "Username already taken." };
 
@@ -65,6 +71,21 @@ public class AccountService : IAccountService
             .Select(b => new BalanceDto { CurrencyCode = b.Key.ToUpper(), Amount = b.Value })
             .OrderBy(b => b.CurrencyCode)
             .ToList();
+    }
+
+    public OperationResult ChangePassword(int userId, string currentPassword, string newPassword)
+    {
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            return new OperationResult { Success = false, Error = "New password must be at least 6 characters." };
+
+        if (!DataStore.Users.TryGetValue(userId, out var user))
+            return new OperationResult { Success = false, Error = "User not found." };
+
+        if (!PasswordHelper.Verify(currentPassword, user.PasswordHash))
+            return new OperationResult { Success = false, Error = "Current password is incorrect." };
+
+        user.PasswordHash = PasswordHelper.Hash(newPassword);
+        return new OperationResult { Success = true };
     }
 }
 

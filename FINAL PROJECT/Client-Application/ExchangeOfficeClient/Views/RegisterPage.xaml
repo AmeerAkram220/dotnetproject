@@ -19,6 +19,10 @@
 
                 <TextBlock Text="Password" Margin="0,0,0,4"/>
                 <PasswordBox x:Name="TxtPassword" Height="36" Padding="8,6"
+                             BorderBrush="#CCCCCC" Margin="0,0,0,14"/>
+
+                <TextBlock Text="Confirm Password" Margin="0,0,0,4"/>
+                <PasswordBox x:Name="TxtConfirmPassword" Height="36" Padding="8,6"
                              BorderBrush="#CCCCCC" Margin="0,0,0,20"/>
 
                 <Button Content="Register" Click="BtnRegister_Click"

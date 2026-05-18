@@ -89,7 +89,8 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 6 — Currency exchange business logic (in-memory): register/login, top-up, buy/sell currency, transaction history
 - [x] Lab 7 — NBP API integration: dedicated `NbpClient`, `GetCurrentRate`, `GetHistoricalRates`, `GetAllCurrentRates`
 - [x] Lab 8 — WPF client app: Login, Register, Exchange Rates, Account (top-up), Trade (buy/sell), History pages
-- [ ] Lab 9 — User account management
+- [x] Lab 9 — User account management: confirm password on register, min length validation, change password, user info card, balance refresh
+- [ ] Lab 10 — Buy/sell currency transactions in WPF
 - [ ] Lab 10 — Buy/sell currency transactions in WPF
 - [ ] Lab 11 — SQL database schema & scripts
 - [ ] Lab 12 — Persist transactions & balances in DB

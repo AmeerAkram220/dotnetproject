@@ -66,6 +66,9 @@ public interface IAccountService
 
     [OperationContract]
     List<BalanceDto> GetBalances(int userId);
+
+    [OperationContract]
+    OperationResult ChangePassword(int userId, string currentPassword, string newPassword);
 }
 
 [ServiceContract]

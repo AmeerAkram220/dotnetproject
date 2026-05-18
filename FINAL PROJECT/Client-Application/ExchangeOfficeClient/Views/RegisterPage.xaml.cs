@@ -20,10 +20,29 @@ public partial class RegisterPage : Page
         TxtSuccess.Visibility = Visibility.Collapsed;
         var username = TxtUsername.Text.Trim();
         var password = TxtPassword.Password;
+        var confirm = TxtConfirmPassword.Password;
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
             TxtError.Text = "Please enter username and password.";
+            TxtError.Visibility = Visibility.Visible;
+            return;
+        }
+        if (username.Length < 3)
+        {
+            TxtError.Text = "Username must be at least 3 characters.";
+            TxtError.Visibility = Visibility.Visible;
+            return;
+        }
+        if (password.Length < 6)
+        {
+            TxtError.Text = "Password must be at least 6 characters.";
+            TxtError.Visibility = Visibility.Visible;
+            return;
+        }
+        if (password != confirm)
+        {
+            TxtError.Text = "Passwords do not match.";
             TxtError.Visibility = Visibility.Visible;
             return;
         }
