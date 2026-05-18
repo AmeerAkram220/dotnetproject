@@ -3,6 +3,8 @@ using CoreWCF.Channels;
 using CoreWCF.Configuration;
 using ExchangeOfficeService;
 
+AppDb.EnsureCreated(); // initialise SQLite schema on first run
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddServiceModelServices();
 builder.Services.AddTransient<AccountService>();

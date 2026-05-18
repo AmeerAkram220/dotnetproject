@@ -1,5 +1,4 @@
-using System.Collections.Concurrent;
-using System.Net.Http.Json;
+using Microsoft.Data.Sqlite;
 
 namespace ExchangeOfficeService;
 
@@ -18,21 +17,44 @@ public class AccountService : IAccountService
         if (password.Length < 6)
             return new UserDto { Error = "Password must be at least 6 characters." };
 
-        if (DataStore.Users.Values.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
-            return new UserDto { Error = "Username already taken." };
+        using var conn = AppDb.Open();
 
-        var user = new UserRecord
+        // Check duplicate
+        using (var chk = conn.CreateCommand())
         {
-            Id = DataStore.NextUserId(),
-            Username = username,
-            PasswordHash = PasswordHelper.Hash(password)
-        };
+            chk.CommandText = "SELECT COUNT(*) FROM Users WHERE LOWER(Username) = LOWER($u)";
+            chk.Parameters.AddWithValue("$u", username.Trim());
+            if ((long)chk.ExecuteScalar()! > 0)
+                return new UserDto { Error = "Username already taken." };
+        }
 
-        DataStore.Users[user.Id] = user;
-        DataStore.Balances[user.Id] = new ConcurrentDictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
-        DataStore.Balances[user.Id]["PLN"] = 0m;
+        // Insert user
+        long newId;
+        using (var ins = conn.CreateCommand())
+        {
+            ins.CommandText = """
+                INSERT INTO Users (Username, PasswordHash)
+                VALUES ($u, $h);
+                SELECT last_insert_rowid();
+                """;
+            ins.Parameters.AddWithValue("$u", username.Trim());
+            ins.Parameters.AddWithValue("$h", PasswordHelper.Hash(password));
+            newId = (long)ins.ExecuteScalar()!;
+        }
 
-        return new UserDto { Id = user.Id, Username = user.Username };
+        // Seed PLN balance = 0
+        using (var bal = conn.CreateCommand())
+        {
+            bal.CommandText = """
+                INSERT INTO Balances (UserId, CurrencyCode, Amount)
+                VALUES ($id, 'PLN', 0)
+                ON CONFLICT(UserId, CurrencyCode) DO NOTHING;
+                """;
+            bal.Parameters.AddWithValue("$id", newId);
+            bal.ExecuteNonQuery();
+        }
+
+        return new UserDto { Id = (int)newId, Username = username.Trim() };
     }
 
     public UserDto Login(string username, string password)
@@ -40,13 +62,23 @@ public class AccountService : IAccountService
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return new UserDto { Error = "Username and password are required." };
 
-        var user = DataStore.Users.Values
-            .FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        using var conn = AppDb.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT Id, Username, PasswordHash FROM Users WHERE LOWER(Username) = LOWER($u)";
+        cmd.Parameters.AddWithValue("$u", username.Trim());
 
-        if (user is null || !PasswordHelper.Verify(password, user.PasswordHash))
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read())
             return new UserDto { Error = "Invalid username or password." };
 
-        return new UserDto { Id = user.Id, Username = user.Username };
+        var id = reader.GetInt32(0);
+        var storedName = reader.GetString(1);
+        var hash = reader.GetString(2);
+
+        if (!PasswordHelper.Verify(password, hash))
+            return new UserDto { Error = "Invalid username or password." };
+
+        return new UserDto { Id = id, Username = storedName };
     }
 
     public OperationResult TopUpBalance(int userId, decimal amount)
@@ -54,23 +86,51 @@ public class AccountService : IAccountService
         if (amount <= 0)
             return new OperationResult { Success = false, Error = "Amount must be greater than zero." };
 
-        if (!DataStore.Balances.TryGetValue(userId, out var balances))
-            return new OperationResult { Success = false, Error = "User not found." };
+        using var conn = AppDb.Open();
 
-        balances.AddOrUpdate("PLN", amount, (_, old) => old + amount);
+        // Verify user exists
+        using (var chk = conn.CreateCommand())
+        {
+            chk.CommandText = "SELECT COUNT(*) FROM Users WHERE Id = $id";
+            chk.Parameters.AddWithValue("$id", userId);
+            if ((long)chk.ExecuteScalar()! == 0)
+                return new OperationResult { Success = false, Error = "User not found." };
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO Balances (UserId, CurrencyCode, Amount)
+            VALUES ($id, 'PLN', $amt)
+            ON CONFLICT(UserId, CurrencyCode)
+            DO UPDATE SET Amount = Amount + $amt;
+            """;
+        cmd.Parameters.AddWithValue("$id", userId);
+        cmd.Parameters.AddWithValue("$amt", (double)amount);
+        cmd.ExecuteNonQuery();
+
         return new OperationResult { Success = true };
     }
 
     public List<BalanceDto> GetBalances(int userId)
     {
-        if (!DataStore.Balances.TryGetValue(userId, out var balances))
-            return [];
+        using var conn = AppDb.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT CurrencyCode, Amount FROM Balances
+            WHERE UserId = $id AND Amount > 0
+            ORDER BY CurrencyCode
+            """;
+        cmd.Parameters.AddWithValue("$id", userId);
 
-        return balances
-            .Where(b => b.Value > 0)
-            .Select(b => new BalanceDto { CurrencyCode = b.Key.ToUpper(), Amount = b.Value })
-            .OrderBy(b => b.CurrencyCode)
-            .ToList();
+        var result = new List<BalanceDto>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            result.Add(new BalanceDto
+            {
+                CurrencyCode = reader.GetString(0),
+                Amount = (decimal)reader.GetDouble(1)
+            });
+        return result;
     }
 
     public OperationResult ChangePassword(int userId, string currentPassword, string newPassword)
@@ -78,13 +138,24 @@ public class AccountService : IAccountService
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
             return new OperationResult { Success = false, Error = "New password must be at least 6 characters." };
 
-        if (!DataStore.Users.TryGetValue(userId, out var user))
+        using var conn = AppDb.Open();
+        using var sel = conn.CreateCommand();
+        sel.CommandText = "SELECT PasswordHash FROM Users WHERE Id = $id";
+        sel.Parameters.AddWithValue("$id", userId);
+        var existing = sel.ExecuteScalar() as string;
+
+        if (existing is null)
             return new OperationResult { Success = false, Error = "User not found." };
 
-        if (!PasswordHelper.Verify(currentPassword, user.PasswordHash))
+        if (!PasswordHelper.Verify(currentPassword, existing))
             return new OperationResult { Success = false, Error = "Current password is incorrect." };
 
-        user.PasswordHash = PasswordHelper.Hash(newPassword);
+        using var upd = conn.CreateCommand();
+        upd.CommandText = "UPDATE Users SET PasswordHash = $h WHERE Id = $id";
+        upd.Parameters.AddWithValue("$h", PasswordHelper.Hash(newPassword));
+        upd.Parameters.AddWithValue("$id", userId);
+        upd.ExecuteNonQuery();
+
         return new OperationResult { Success = true };
     }
 }
@@ -188,45 +259,54 @@ public class TransactionService : ITransactionService
         if (amount <= 0)
             return new TransactionDto { Error = "Amount must be greater than zero." };
 
-        if (!DataStore.Balances.TryGetValue(userId, out var balances))
-            return new TransactionDto { Error = "User not found." };
+        var code = currencyCode.ToUpper();
 
-        var rateDto = _rateService.GetCurrentRate(currencyCode);
+        var rateDto = _rateService.GetCurrentRate(code);
         if (rateDto.Error is not null)
             return new TransactionDto { Error = rateDto.Error };
 
         var costInPln = Math.Round(amount * rateDto.Mid, 2);
-        var plnBalance = balances.GetOrAdd("PLN", 0m);
 
-        if (plnBalance < costInPln)
-            return new TransactionDto { Error = $"Insufficient PLN balance. Required: {costInPln}, Available: {plnBalance}." };
+        using var conn = AppDb.Open();
+        using var tx = conn.BeginTransaction();
 
-        balances.AddOrUpdate("PLN", 0m, (_, old) => old - costInPln);
-        balances.AddOrUpdate(currencyCode.ToUpper(), amount, (_, old) => old + amount);
-
-        var tx = new TransactionRecord
+        try
         {
-            Id = DataStore.NextTransactionId(),
-            UserId = userId,
-            FromCurrency = "PLN",
-            ToCurrency = currencyCode.ToUpper(),
-            FromAmount = costInPln,
-            ToAmount = amount,
-            Rate = rateDto.Mid,
-            Date = DateTime.UtcNow
-        };
-        DataStore.Transactions.Add(tx);
+            // Check PLN balance
+            decimal plnBalance = GetBalance(conn, userId, "PLN");
+            if (plnBalance < costInPln)
+            {
+                tx.Rollback();
+                return new TransactionDto { Error = $"Insufficient PLN balance. Required: {costInPln:F2}, Available: {plnBalance:F2}." };
+            }
 
-        return new TransactionDto
+            // Deduct PLN
+            UpsertBalance(conn, userId, "PLN", plnBalance - costInPln);
+            // Add foreign currency
+            decimal foreignBalance = GetBalance(conn, userId, code);
+            UpsertBalance(conn, userId, code, foreignBalance + amount);
+
+            // Record transaction
+            long txId = InsertTransaction(conn, userId, "PLN", code, costInPln, amount, rateDto.Mid);
+
+            tx.Commit();
+
+            return new TransactionDto
+            {
+                Id = (int)txId,
+                FromCurrency = "PLN",
+                ToCurrency = code,
+                FromAmount = costInPln,
+                ToAmount = amount,
+                Rate = rateDto.Mid,
+                Date = DateTime.UtcNow
+            };
+        }
+        catch
         {
-            Id = tx.Id,
-            FromCurrency = tx.FromCurrency,
-            ToCurrency = tx.ToCurrency,
-            FromAmount = tx.FromAmount,
-            ToAmount = tx.ToAmount,
-            Rate = tx.Rate,
-            Date = tx.Date
-        };
+            tx.Rollback();
+            throw;
+        }
     }
 
     public TransactionDto SellCurrency(int userId, string currencyCode, decimal amount)
@@ -234,64 +314,124 @@ public class TransactionService : ITransactionService
         if (amount <= 0)
             return new TransactionDto { Error = "Amount must be greater than zero." };
 
-        if (!DataStore.Balances.TryGetValue(userId, out var balances))
-            return new TransactionDto { Error = "User not found." };
-
         var code = currencyCode.ToUpper();
-        var foreignBalance = balances.GetOrAdd(code, 0m);
 
-        if (foreignBalance < amount)
-            return new TransactionDto { Error = $"Insufficient {code} balance. Required: {amount}, Available: {foreignBalance}." };
+        using var conn = AppDb.Open();
+        using var tx = conn.BeginTransaction();
 
-        var rateDto = _rateService.GetCurrentRate(currencyCode);
-        if (rateDto.Error is not null)
-            return new TransactionDto { Error = rateDto.Error };
-
-        var gainInPln = Math.Round(amount * rateDto.Mid, 2);
-
-        balances.AddOrUpdate(code, 0m, (_, old) => old - amount);
-        balances.AddOrUpdate("PLN", gainInPln, (_, old) => old + gainInPln);
-
-        var tx = new TransactionRecord
+        try
         {
-            Id = DataStore.NextTransactionId(),
-            UserId = userId,
-            FromCurrency = code,
-            ToCurrency = "PLN",
-            FromAmount = amount,
-            ToAmount = gainInPln,
-            Rate = rateDto.Mid,
-            Date = DateTime.UtcNow
-        };
-        DataStore.Transactions.Add(tx);
+            decimal foreignBalance = GetBalance(conn, userId, code);
+            if (foreignBalance < amount)
+            {
+                tx.Rollback();
+                return new TransactionDto { Error = $"Insufficient {code} balance. Required: {amount:F4}, Available: {foreignBalance:F4}." };
+            }
 
-        return new TransactionDto
+            var rateDto = _rateService.GetCurrentRate(code);
+            if (rateDto.Error is not null) { tx.Rollback(); return new TransactionDto { Error = rateDto.Error }; }
+
+            var gainInPln = Math.Round(amount * rateDto.Mid, 2);
+
+            // Deduct foreign
+            UpsertBalance(conn, userId, code, foreignBalance - amount);
+            // Add PLN
+            decimal plnBalance = GetBalance(conn, userId, "PLN");
+            UpsertBalance(conn, userId, "PLN", plnBalance + gainInPln);
+
+            long txId = InsertTransaction(conn, userId, code, "PLN", amount, gainInPln, rateDto.Mid);
+
+            tx.Commit();
+
+            return new TransactionDto
+            {
+                Id = (int)txId,
+                FromCurrency = code,
+                ToCurrency = "PLN",
+                FromAmount = amount,
+                ToAmount = gainInPln,
+                Rate = rateDto.Mid,
+                Date = DateTime.UtcNow
+            };
+        }
+        catch
         {
-            Id = tx.Id,
-            FromCurrency = tx.FromCurrency,
-            ToCurrency = tx.ToCurrency,
-            FromAmount = tx.FromAmount,
-            ToAmount = tx.ToAmount,
-            Rate = tx.Rate,
-            Date = tx.Date
-        };
+            tx.Rollback();
+            throw;
+        }
     }
 
-    public List<TransactionDto> GetTransactionHistory(int userId) =>
-        DataStore.Transactions
-            .Where(t => t.UserId == userId)
-            .OrderByDescending(t => t.Date)
-            .Select(t => new TransactionDto
+    public List<TransactionDto> GetTransactionHistory(int userId)
+    {
+        using var conn = AppDb.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            SELECT Id, FromCurrency, ToCurrency, FromAmount, ToAmount, Rate, Date
+            FROM Transactions
+            WHERE UserId = $id
+            ORDER BY Date DESC
+            """;
+        cmd.Parameters.AddWithValue("$id", userId);
+
+        var result = new List<TransactionDto>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+            result.Add(new TransactionDto
             {
-                Id = t.Id,
-                FromCurrency = t.FromCurrency,
-                ToCurrency = t.ToCurrency,
-                FromAmount = t.FromAmount,
-                ToAmount = t.ToAmount,
-                Rate = t.Rate,
-                Date = t.Date
-            }).ToList();
+                Id = reader.GetInt32(0),
+                FromCurrency = reader.GetString(1),
+                ToCurrency = reader.GetString(2),
+                FromAmount = (decimal)reader.GetDouble(3),
+                ToAmount = (decimal)reader.GetDouble(4),
+                Rate = (decimal)reader.GetDouble(5),
+                Date = DateTime.Parse(reader.GetString(6))
+            });
+        return result;
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static decimal GetBalance(SqliteConnection conn, int userId, string code)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT Amount FROM Balances WHERE UserId = $id AND CurrencyCode = $c";
+        cmd.Parameters.AddWithValue("$id", userId);
+        cmd.Parameters.AddWithValue("$c", code);
+        var val = cmd.ExecuteScalar();
+        return val is null ? 0m : (decimal)(double)val;
+    }
+
+    private static void UpsertBalance(SqliteConnection conn, int userId, string code, decimal amount)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO Balances (UserId, CurrencyCode, Amount)
+            VALUES ($id, $c, $amt)
+            ON CONFLICT(UserId, CurrencyCode)
+            DO UPDATE SET Amount = $amt;
+            """;
+        cmd.Parameters.AddWithValue("$id", userId);
+        cmd.Parameters.AddWithValue("$c", code);
+        cmd.Parameters.AddWithValue("$amt", (double)amount);
+        cmd.ExecuteNonQuery();
+    }
+
+    private static long InsertTransaction(SqliteConnection conn, int userId,
+        string from, string to, decimal fromAmt, decimal toAmt, decimal rate)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO Transactions (UserId, FromCurrency, ToCurrency, FromAmount, ToAmount, Rate, Date)
+            VALUES ($uid, $fc, $tc, $fa, $ta, $r, $d);
+            SELECT last_insert_rowid();
+            """;
+        cmd.Parameters.AddWithValue("$uid", userId);
+        cmd.Parameters.AddWithValue("$fc", from);
+        cmd.Parameters.AddWithValue("$tc", to);
+        cmd.Parameters.AddWithValue("$fa", (double)fromAmt);
+        cmd.Parameters.AddWithValue("$ta", (double)toAmt);
+        cmd.Parameters.AddWithValue("$r", (double)rate);
+        cmd.Parameters.AddWithValue("$d", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+        return (long)cmd.ExecuteScalar()!;
+    }
 }
-
-
-

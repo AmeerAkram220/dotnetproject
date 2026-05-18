@@ -91,7 +91,7 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 8 — WPF client app: Login, Register, Exchange Rates, Account (top-up), Trade (buy/sell), History pages
 - [x] Lab 9 — User account management: confirm password on register, min length validation, change password, user info card, balance refresh
 - [x] Lab 10 — Trade page polish: PLN balance bar with refresh, live rate preview while typing (cost/gain shown before confirming), balance auto-refresh after each trade
-- [ ] Lab 11 — SQL database schema & scripts
-- [ ] Lab 12 — Persist transactions & balances in DB
+- [x] Lab 11 — SQLite database: schema script (`Database/schema.sql`), `AppDb.cs` initialiser (auto-creates tables on first run), `Microsoft.Data.Sqlite` package added
+- [x] Lab 12 — Full DB persistence: `AccountService`, `TransactionService` rewritten with SQLite queries; register/login/balances/transactions all stored on disk; buy/sell wrapped in transactions with rollback on error
 - [ ] Lab 13 — Historical rates view & reporting
 - [ ] Lab 14 — Testing, debugging, final fixes
