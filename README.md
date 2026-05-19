@@ -94,4 +94,4 @@ Test via Postman (SOAP) or SoapUI.
 - [x] Lab 11 — SQLite database: schema script (`Database/schema.sql`), `AppDb.cs` initialiser (auto-creates tables on first run), `Microsoft.Data.Sqlite` package added
 - [x] Lab 12 — Full DB persistence: `AccountService`, `TransactionService` rewritten with SQLite queries; register/login/balances/transactions all stored on disk; buy/sell wrapped in transactions with rollback on error
 - [x] Lab 13 — Historical rates
-- [ ] Lab 14 — Testing, debugging, final fixes
+- [x] Lab 14 — Bug fixes: history error display, SellCurrency rate-fetch ordering, TradePage rate cache currency mismatch

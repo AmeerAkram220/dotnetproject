@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using ExchangeOfficeClient.Services;
 
@@ -18,6 +19,10 @@ public partial class HistoryPage : Page
             var svc = ServiceClientFactory.TransactionService();
             HistoryGrid.ItemsSource = svc.GetTransactionHistory(Session.UserId);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            TxtError.Text = $"Failed to load history: {ex.Message}";
+            TxtError.Visibility = Visibility.Visible;
+        }
     }
 }

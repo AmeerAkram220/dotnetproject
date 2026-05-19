@@ -316,6 +316,10 @@ public class TransactionService : ITransactionService
 
         var code = currencyCode.ToUpper();
 
+        var rateDto = _rateService.GetCurrentRate(code);
+        if (rateDto.Error is not null)
+            return new TransactionDto { Error = rateDto.Error };
+
         using var conn = AppDb.Open();
         using var tx = conn.BeginTransaction();
 
@@ -328,8 +332,6 @@ public class TransactionService : ITransactionService
                 return new TransactionDto { Error = $"Insufficient {code} balance. Required: {amount:F4}, Available: {foreignBalance:F4}." };
             }
 
-            var rateDto = _rateService.GetCurrentRate(code);
-            if (rateDto.Error is not null) { tx.Rollback(); return new TransactionDto { Error = rateDto.Error }; }
 
             var gainInPln = Math.Round(amount * rateDto.Mid, 2);
 

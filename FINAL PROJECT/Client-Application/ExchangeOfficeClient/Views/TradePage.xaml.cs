@@ -10,6 +10,8 @@ public partial class TradePage : Page
     // Cached rates to avoid hitting API on every keystroke
     private decimal _buyRate = 0;
     private decimal _sellRate = 0;
+    private string _buyCachedCode = "";
+    private string _sellCachedCode = "";
     private DateTime _buyRateFetched = DateTime.MinValue;
     private DateTime _sellRateFetched = DateTime.MinValue;
 
@@ -50,12 +52,13 @@ public partial class TradePage : Page
 
         try
         {
-            // Re-fetch rate only if code changed or cache is older than 60s
-            if (_buyRate == 0 || (DateTime.Now - _buyRateFetched).TotalSeconds > 60)
+            // Re-fetch rate if currency changed or cache is older than 60s
+            if (_buyRate == 0 || code != _buyCachedCode || (DateTime.Now - _buyRateFetched).TotalSeconds > 60)
             {
                 var rate = ServiceClientFactory.ExchangeRateService().GetCurrentRate(code);
                 if (rate.Error is not null) { BuyPreview.Visibility = Visibility.Collapsed; return; }
                 _buyRate = rate.Mid;
+                _buyCachedCode = code;
                 _buyRateFetched = DateTime.Now;
             }
             var cost = Math.Round(amount * _buyRate, 2);
@@ -76,11 +79,12 @@ public partial class TradePage : Page
 
         try
         {
-            if (_sellRate == 0 || (DateTime.Now - _sellRateFetched).TotalSeconds > 60)
+            if (_sellRate == 0 || code != _sellCachedCode || (DateTime.Now - _sellRateFetched).TotalSeconds > 60)
             {
                 var rate = ServiceClientFactory.ExchangeRateService().GetCurrentRate(code);
                 if (rate.Error is not null) { SellPreview.Visibility = Visibility.Collapsed; return; }
                 _sellRate = rate.Mid;
+                _sellCachedCode = code;
                 _sellRateFetched = DateTime.Now;
             }
             var gain = Math.Round(amount * _sellRate, 2);
@@ -118,7 +122,7 @@ public partial class TradePage : Page
             {
                 TxtBuyMsg.Text = $"✔ Bought {tx.ToAmount:F4} {tx.ToCurrency} for {tx.FromAmount:F2} PLN @ rate {tx.Rate:F4}.";
                 TxtBuyMsg.Foreground = Brushes.Green;
-                _buyRate = 0; // invalidate cached rate
+                _buyRate = 0; _buyCachedCode = ""; // invalidate cached rate
                 RefreshPlnBalance();
             }
             TxtBuyMsg.Visibility = Visibility.Visible;
@@ -159,7 +163,7 @@ public partial class TradePage : Page
             {
                 TxtSellMsg.Text = $"✔ Sold {tx.FromAmount:F4} {tx.FromCurrency} for {tx.ToAmount:F2} PLN @ rate {tx.Rate:F4}.";
                 TxtSellMsg.Foreground = Brushes.Green;
-                _sellRate = 0; // invalidate cached rate
+                _sellRate = 0; _sellCachedCode = ""; // invalidate cached rate
                 RefreshPlnBalance();
             }
             TxtSellMsg.Visibility = Visibility.Visible;

@@ -10,6 +10,10 @@
 
         <TextBlock Grid.Row="0" Text="Transaction History" Style="{StaticResource PageTitle}"/>
 
+        <TextBlock x:Name="TxtError" Grid.Row="1"
+                   Foreground="Red" FontSize="14" Margin="0,8,0,0"
+                   Visibility="Collapsed" VerticalAlignment="Top"/>
+
         <DataGrid Grid.Row="1" x:Name="HistoryGrid"
                   AutoGenerateColumns="False" IsReadOnly="True"
                   CanUserAddRows="False" GridLinesVisibility="Horizontal"
